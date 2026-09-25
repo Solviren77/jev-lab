@@ -5,162 +5,317 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Jev Lab</title>
 <style>
-:root { --bg:#fafaf8; --panel:#fff; --ink:#1d1d1b; --muted:#6b6b66; --line:#e3e2dc; --accent:#2f5d8a; --good:#2e7d4f; --warn:#a86b00; --bad:#b3261e; }
-@media (prefers-color-scheme: dark) { :root { --bg:#161615; --panel:#1f1f1d; --ink:#ecebe6; --muted:#9a9993; --line:#33332f; --accent:#7fa8d4; --good:#6cc08b; --warn:#e0a84a; --bad:#f08077; } }
+:root { --bg:#f6f5f1; --panel:#fff; --ink:#1d1d1b; --muted:#6b6b66; --line:#e3e2dc; --accent:#2f5d8a; --accent-soft:#e6eef7; --good:#2e7d4f; --warn:#a86b00; --bad:#b3261e; }
+@media (prefers-color-scheme: dark) { :root { --bg:#141413; --panel:#1e1e1c; --ink:#ecebe6; --muted:#9a9993; --line:#33332f; --accent:#7fa8d4; --accent-soft:#223244; --good:#6cc08b; --warn:#e0a84a; --bad:#f08077; } }
 * { box-sizing:border-box; }
-body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.45 -apple-system, system-ui, sans-serif; }
-header { display:flex; gap:12px; align-items:center; padding:12px 16px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
-h1 { font-size:16px; margin:0 12px 0 0; }
-main { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px; padding:16px; }
-@media (max-width:900px) { main { grid-template-columns:1fr; } }
-section { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:14px; margin-bottom:16px; }
-h2 { font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin:0 0 10px; }
-input, textarea, select, button { font:inherit; color:inherit; background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:6px 8px; }
-textarea { width:100%; font:12px/1.4 ui-monospace, Menlo, monospace; min-height:320px; resize:vertical; }
-button { cursor:pointer; }
-button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
-.row { display:flex; gap:6px; margin-bottom:6px; }
+body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 -apple-system, system-ui, sans-serif; }
+header { display:flex; gap:10px; align-items:center; padding:12px 20px; border-bottom:1px solid var(--line); background:var(--panel); flex-wrap:wrap; position:sticky; top:0; z-index:2; }
+h1 { font-size:17px; margin:0 14px 0 0; }
+main { display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); gap:20px; padding:20px; max-width:1500px; margin:0 auto; }
+@media (max-width:950px) { main { grid-template-columns:1fr; padding:16px; } }
+section { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:18px; margin-bottom:20px; }
+h2 { font-size:16px; margin:0 0 4px; }
+.hint { color:var(--muted); font-size:13px; margin:0 0 12px; }
+input, textarea, select, button { font:inherit; color:inherit; background:var(--bg); border:1px solid var(--line); border-radius:7px; padding:7px 10px; }
+textarea { width:100%; resize:vertical; }
+button { cursor:pointer; background:var(--panel); }
+button:hover { border-color:var(--accent); }
+button.primary { background:var(--accent); color:#fff; border-color:var(--accent); font-weight:600; padding:9px 18px; }
+button.link { border:0; background:none; color:var(--accent); padding:4px 0; }
+button.x { border:0; background:none; color:var(--muted); font-size:18px; line-height:1; padding:4px 8px; }
+.row { display:flex; gap:8px; margin-bottom:8px; align-items:center; }
 .row input { flex:1; min-width:0; }
-.muted { color:var(--muted); }
-.err { color:var(--bad); white-space:pre-wrap; }
-table { width:100%; border-collapse:collapse; }
-td, th { text-align:left; padding:5px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
-.bar { height:6px; background:var(--line); border-radius:3px; min-width:80px; }
-.bar i { display:block; height:100%; border-radius:3px; background:var(--accent); }
-.tag { display:inline-block; padding:1px 6px; border-radius:10px; border:1px solid var(--line); margin:2px 4px 2px 0; font-size:12px; }
-.tag.sel { border-color:var(--good); color:var(--good); }
-.tag.unc { border-color:var(--warn); color:var(--warn); }
+.drop { border:2px dashed var(--line); border-radius:10px; padding:22px; text-align:center; color:var(--muted); cursor:pointer; }
+.drop.over { border-color:var(--accent); background:var(--accent-soft); }
+.file { display:flex; justify-content:space-between; align-items:center; padding:6px 10px; border:1px solid var(--line); border-radius:7px; margin-top:8px; }
+.q { border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:14px; }
+.q-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:8px; }
+.types { display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+.types button { border:0; border-radius:0; padding:6px 12px; }
+.types button.on { background:var(--accent); color:#fff; }
+.sub { margin-top:10px; }
+.sub label { display:block; font-size:13px; color:var(--muted); margin:6px 0 4px; }
+.err { color:var(--bad); }
+.answer { border-bottom:1px solid var(--line); padding:12px 0; }
+.answer:last-child { border-bottom:0; }
+.big { font-size:18px; font-weight:600; }
+.bars div { display:grid; grid-template-columns:minmax(80px,40%) 1fr 44px; gap:8px; align-items:center; font-size:13px; margin-top:4px; }
+.bar { height:8px; background:var(--line); border-radius:4px; overflow:hidden; }
+.bar i { display:block; height:100%; background:var(--accent); }
+.bars .top .bar i { background:var(--good); }
+.pill { display:inline-block; padding:1px 8px; border-radius:10px; font-size:12px; border:1px solid var(--line); color:var(--muted); margin-left:6px; }
+.pill.yes { color:var(--good); border-color:var(--good); }
+.pill.no { color:var(--muted); }
+.pill.unsure { color:var(--warn); border-color:var(--warn); }
+.history div { padding:8px 0; border-bottom:1px solid var(--line); cursor:pointer; font-size:14px; }
+.history div:hover { color:var(--accent); }
+details summary { cursor:pointer; color:var(--muted); font-size:13px; }
 pre { white-space:pre-wrap; font-size:12px; max-height:300px; overflow:auto; }
-.history div { padding:6px 0; border-bottom:1px solid var(--line); cursor:pointer; }
+.actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
 </style>
 </head>
 <body>
 <header>
   <h1>Jev Lab</h1>
-  <select id="pick"></select>
-  <input id="name" placeholder="scenario name" size="18">
+  <select id="pick"><option value="">Open saved…</option></select>
+  <button id="new">New</button>
+  <input id="name" placeholder="Name this scenario" size="22">
   <button id="save">Save</button>
-  <span id="status" class="muted"></span>
+  <span id="status" class="hint" style="margin:0"></span>
 </header>
 <main>
   <div>
     <section>
-      <h2>Variables</h2>
+      <h2>1. Documents</h2>
+      <p class="hint">Jev reads these as context. PDF, Word, email (.eml), text, Markdown, JSON or CSV.</p>
+      <div id="drop" class="drop">Drop files here or <u>click to choose</u></div>
+      <input type="file" id="picker" multiple hidden>
+      <div id="files"></div>
+      <label class="hint" style="display:block;margin-top:12px">Or type / paste context</label>
+      <textarea id="notes" rows="3" placeholder="Anything else Jev should know"></textarea>
+    </section>
+
+    <section>
+      <h2>2. Variables <span class="hint">(optional)</span></h2>
+      <p class="hint">Reusable values. Type <b>{client}</b> in a question and it's replaced with the value here.</p>
       <div id="vars"></div>
-      <button id="addVar">Add variable</button>
-      <p class="muted">Use <code>{{name}}</code> in questions, state or document paths.</p>
+      <button class="link" id="addVar">+ Add variable</button>
     </section>
+
     <section>
-      <h2>Documents</h2>
-      <div id="docs"></div>
-      <button id="addDoc">Add file path</button>
-      <label><input type="file" id="upload" multiple hidden><button onclick="upload.click()">Upload files…</button></label>
-      <div id="uploaded" class="muted"></div>
-    </section>
-    <section>
-      <h2>Questions and extra state (JSON)</h2>
-      <textarea id="spec" spellcheck="false"></textarea>
-      <p class="muted">Types: <code>noul</code> (P yes; optional <code>threshold</code>), <code>choice</code> (<code>criteria</code>: {option: description}), <code>score</code> (<code>criteria</code>: [level 0, level 1, …]).</p>
+      <h2>3. Questions</h2>
+      <p class="hint">Ask as many as you like; they're all answered in one call.</p>
+      <div id="questions"></div>
+      <div class="actions">
+        <button id="addYes">+ Yes / No</button>
+        <button id="addPick">+ Pick one</button>
+        <button id="addScale">+ Rate on a scale</button>
+      </div>
     </section>
   </div>
+
   <div>
     <section>
-      <button id="preview">Preview request</button>
-      <button id="run" class="primary">Run (paid call)</button>
-      <div id="result" style="margin-top:12px"></div>
+      <div class="actions">
+        <button class="primary" id="run">Ask Jev</button>
+        <span class="hint" style="margin:0">Each run is a paid call (usually under $0.001).</span>
+      </div>
+      <div id="result" style="margin-top:14px"></div>
     </section>
     <section>
       <h2>History</h2>
-      <select id="kind"><option value="">All</option><option value="scenario">Scenarios</option><option value="categorize">Background categorizations</option></select>
+      <select id="kind" style="margin:6px 0 4px"><option value="">Everything</option><option value="scenario">Scenarios I ran</option><option value="categorize">Background sorting</option></select>
       <div id="history" class="history"></div>
     </section>
   </div>
 </main>
 <script>
 const $ = id => document.getElementById(id);
-let files = [];
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const pct = v => Math.round((v ?? 0) * 100) + "%";
+const LABEL = {noul: "Yes / No", choice: "Pick one", score: "Rate on a scale"};
+let files = [], paths = [], dir = null, qs = [];
+
 async function api(path, body) {
   const r = await fetch(path, body ? {method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify(body)} : {});
   const j = await r.json();
   if (!r.ok) throw new Error(j.error || r.status);
   return j;
 }
-function row(parent, a, b, pa, pb) {
-  const d = document.createElement("div"); d.className = "row";
-  d.innerHTML = `<input placeholder="${pa}" value="${esc(a)}">` + (pb ? `<input placeholder="${pb}" value="${esc(b)}">` : "") + `<button>×</button>`;
-  d.querySelector("button").onclick = () => d.remove();
-  parent.appendChild(d);
+
+/* ---------- documents ---------- */
+function drawFiles() {
+  $("files").innerHTML = [...files.map((f, i) => ["f", i, f.name]), ...paths.map((p, i) => ["p", i, p])]
+    .map(([k, i, n]) => `<div class="file"><span>📄 ${esc(n)}</span><button class="x" data-k="${k}" data-i="${i}" title="Remove">×</button></div>`).join("");
+  $("files").querySelectorAll("button").forEach(b => b.onclick = () => { (b.dataset.k === "f" ? files : paths).splice(+b.dataset.i, 1); drawFiles(); });
 }
-let dir = null;
-function load(s) {
-  dir = s._dir || null;
-  $("name").value = s.name || "";
-  $("vars").innerHTML = ""; $("docs").innerHTML = ""; files = []; $("uploaded").textContent = "";
-  Object.entries(s.variables || {}).forEach(([k, v]) => row($("vars"), k, v, "name", "value"));
-  (s.documents || []).forEach(p => row($("docs"), p, null, "~/path/to/file.pdf"));
-  const rest = {questions: s.questions || {}};
-  for (const k of ["state", "watch", "output_jsonl"]) if (s[k] && Object.keys(s[k]).length) rest[k] = s[k];
-  $("spec").value = JSON.stringify(rest, null, 2);
-}
-function current() {
-  const spec = JSON.parse($("spec").value);
-  const variables = {};
-  $("vars").querySelectorAll(".row").forEach(r => { const [k, v] = r.querySelectorAll("input"); if (k.value) variables[k.value] = v.value; });
-  const documents = [...$("docs").querySelectorAll("input")].map(i => i.value).filter(Boolean);
-  return {name: $("name").value || "untitled", variables, documents, state: {}, ...spec, ...(dir ? {_dir: dir} : {})};
-}
-async function refresh() {
-  const list = await api("/api/scenarios");
-  $("pick").innerHTML = `<option value="">Open…</option>` + list.map(s => `<option>${esc(s.name)}</option>`).join("");
-}
-function render(rec) {
-  if (rec.status === "dry-run") return `<p class="muted">${rec.request_bytes} bytes · no call made</p><pre>${esc(JSON.stringify(rec.request, null, 2))}</pre>`;
-  if (rec.status === "error") return `<p class="err">${esc(rec.error)}</p>`;
-  const rows = Object.entries(rec.answers).map(([k, a]) => {
-    const v = a.value ?? 0;
-    const detail = a.type === "choice" ? `${esc(a.choice)} <span class="muted">${Object.entries(a.probabilities).sort((x,y)=>y[1]-x[1]).slice(0,3).map(([o,p])=>esc(o)+" "+p).join(" · ")}</span>`
-      : a.type === "score" ? `${a.score}: ${esc(a.level)}` : "";
-    return `<tr><td>${esc(k)}</td><td>${v.toFixed(2)}</td><td><div class="bar"><i style="width:${v*100}%"></i></div></td><td>${detail}</td></tr>`;
-  }).join("");
-  const m = rec.meta || {};
-  return `<div>${(rec.selected||[]).map(s=>`<span class="tag sel">${esc(s)}</span>`).join("")}${(rec.uncertain||[]).map(s=>`<span class="tag unc">? ${esc(s)}</span>`).join("")}</div>
-    <table><tr><th>Question</th><th>Value</th><th></th><th></th></tr>${rows}</table>
-    <p class="muted">${m.seconds}s · ${m.input_tokens} in / ${m.output_tokens} out · $${m.cost}${rec.source ? " · " + esc(rec.source) : ""}</p>`;
-}
-async function history() {
-  const runs = await api("/api/runs" + ($("kind").value ? "?kind=" + $("kind").value : ""));
-  $("history").innerHTML = runs.map((r, i) => `<div data-i="${i}"><b>#${r.id}</b> ${esc(r.scenario)} <span class="muted">${new Date(r.at*1000).toLocaleString()} · ${r.status}${r.source ? " · " + esc(r.source.split("/").pop()) : ""}</span><br>${(r.selected||[]).map(s=>`<span class="tag sel">${esc(s)}</span>`).join("")}</div>`).join("") || `<p class="muted">No runs yet.</p>`;
-  $("history").querySelectorAll("div[data-i]").forEach(d => d.onclick = () => $("result").innerHTML = render(runs[d.dataset.i]));
-}
-async function go(path) {
-  $("result").innerHTML = `<p class="muted">Working…</p>`;
-  try {
-    const rec = await api(path, {scenario: current(), uploads: files});
-    $("result").innerHTML = render(rec);
-    if (path === "/api/run") history();
-  } catch (e) { $("result").innerHTML = `<p class="err">${esc(e.message)}</p>`; }
-}
-$("pick").onchange = async () => { if ($("pick").value) load(await api("/api/scenario/" + $("pick").value)); };
-$("addVar").onclick = () => row($("vars"), "", "", "name", "value");
-$("addDoc").onclick = () => row($("docs"), "", null, "~/path/to/file.pdf");
-$("upload").onchange = async e => {
-  for (const f of e.target.files) {
+async function addFiles(list) {
+  for (const f of list) {
     const b = new Uint8Array(await f.arrayBuffer()); let s = "";
     for (let i = 0; i < b.length; i += 32768) s += String.fromCharCode(...b.subarray(i, i + 32768));
     files.push({name: f.name, base64: btoa(s)});
   }
-  $("uploaded").textContent = "Uploaded: " + files.map(f => f.name).join(", ");
+  drawFiles();
+}
+$("drop").onclick = () => $("picker").click();
+$("picker").onchange = e => { addFiles(e.target.files); e.target.value = ""; };
+$("drop").ondragover = e => { e.preventDefault(); $("drop").classList.add("over"); };
+$("drop").ondragleave = () => $("drop").classList.remove("over");
+$("drop").ondrop = e => { e.preventDefault(); $("drop").classList.remove("over"); addFiles(e.dataTransfer.files); };
+
+/* ---------- variables ---------- */
+function addVar(k = "", v = "") {
+  const d = document.createElement("div"); d.className = "row";
+  d.innerHTML = `<input placeholder="name, e.g. client" value="${esc(k)}"><input placeholder="value, e.g. Acme Corp" value="${esc(v)}"><button class="x" title="Remove">×</button>`;
+  d.querySelector("button").onclick = () => d.remove();
+  $("vars").appendChild(d);
+}
+$("addVar").onclick = () => addVar();
+
+/* ---------- questions ---------- */
+function newQ(type) {
+  return {type, text: "", yes: "", no: "", threshold: 50,
+          options: type === "choice" ? ["", ""] : [], levels: type === "score" ? ["", "", ""] : []};
+}
+function listEditor(q, key, placeholder) {
+  const wrap = document.createElement("div");
+  q[key].forEach((val, i) => {
+    const r = document.createElement("div"); r.className = "row";
+    r.innerHTML = `<input placeholder="${placeholder(i)}" value="${esc(val)}"><button class="x" title="Remove">×</button>`;
+    r.querySelector("input").oninput = e => q[key][i] = e.target.value;
+    r.querySelector("button").onclick = () => { q[key].splice(i, 1); drawQs(); };
+    wrap.appendChild(r);
+  });
+  const add = document.createElement("button"); add.className = "link";
+  add.textContent = key === "options" ? "+ Add option" : "+ Add level";
+  add.onclick = () => { q[key].push(""); drawQs(); };
+  wrap.appendChild(add);
+  return wrap;
+}
+function drawQs() {
+  const box = $("questions"); box.innerHTML = "";
+  if (!qs.length) box.innerHTML = `<p class="hint">No questions yet. Pick a type below.</p>`;
+  qs.forEach((q, i) => {
+    const card = document.createElement("div"); card.className = "q";
+    card.innerHTML = `<div class="q-head"><div class="types">${Object.entries(LABEL).map(([t, l]) =>
+        `<button data-t="${t}" class="${q.type === t ? "on" : ""}">${l}</button>`).join("")}</div>
+      <button class="x" title="Delete question">×</button></div>
+      <textarea rows="2" placeholder="${q.type === "noul" ? "e.g. Does this document ask me to pay something?" : q.type === "choice" ? "e.g. What kind of document is this?" : "e.g. How urgent is this?"}">${esc(q.text)}</textarea>
+      <div class="sub"></div>`;
+    card.querySelectorAll(".types button").forEach(b => b.onclick = () => {
+      if (b.dataset.t === q.type) return;
+      qs[i] = Object.assign(newQ(b.dataset.t), {text: q.text}); drawQs();
+    });
+    card.querySelector(".q-head .x").onclick = () => { qs.splice(i, 1); drawQs(); };
+    card.querySelector("textarea").oninput = e => q.text = e.target.value;
+    const sub = card.querySelector(".sub");
+    if (q.type === "noul") {
+      sub.innerHTML = `<details ${q.yes || q.no || q.threshold != 50 ? "open" : ""}><summary>Fine-tune (optional)</summary>
+        <label>Counts as yes when…</label><input style="width:100%" data-f="yes" value="${esc(q.yes)}" placeholder="e.g. it asks for payment by a date">
+        <label>Counts as no when…</label><input style="width:100%" data-f="no" value="${esc(q.no)}" placeholder="e.g. it's only a receipt or statement">
+        <label>Treat as yes when Jev is at least <input type="number" min="1" max="99" data-f="threshold" value="${q.threshold}" style="width:70px"> % sure</label></details>`;
+      sub.querySelectorAll("input").forEach(inp => inp.oninput = e => q[e.target.dataset.f] = e.target.type === "number" ? +e.target.value : e.target.value);
+    } else if (q.type === "choice") {
+      sub.innerHTML = `<label>Options (Jev picks exactly one)</label>`;
+      sub.appendChild(listEditor(q, "options", i => ["e.g. Invoice", "e.g. Contract", "e.g. Other"][i] || "another option"));
+    } else {
+      sub.innerHTML = `<label>Levels, lowest first</label>`;
+      sub.appendChild(listEditor(q, "levels", i => ["e.g. Not urgent", "e.g. This week", "e.g. Today"][i] || "next level up"));
+    }
+    box.appendChild(card);
+  });
+}
+$("addYes").onclick = () => { qs.push(newQ("noul")); drawQs(); };
+$("addPick").onclick = () => { qs.push(newQ("choice")); drawQs(); };
+$("addScale").onclick = () => { qs.push(newQ("score")); drawQs(); };
+
+/* ---------- scenario <-> form ---------- */
+function slug(text, i, used) {
+  let s = (text.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 40)) || "question";
+  let k = s, n = 2; while (used.has(k)) k = s + "_" + n++;
+  used.add(k); return k;
+}
+function toScenario() {
+  const variables = {};
+  $("vars").querySelectorAll(".row").forEach(r => { const [k, v] = r.querySelectorAll("input"); if (k.value.trim()) variables[k.value.trim()] = v.value; });
+  const questions = {}, used = new Set();
+  qs.forEach((q, i) => {
+    if (!q.text.trim()) throw new Error(`Question ${i + 1} is empty.`);
+    const out = {type: q.type, instructions: q.text.trim(), label: q.text.trim()};
+    if (q.type === "noul") {
+      if (q.yes.trim() || q.no.trim()) out.criteria = {true: q.yes.trim() || "Yes", false: q.no.trim() || "No"};
+      out.threshold = (q.threshold || 50) / 100;
+    } else if (q.type === "choice") {
+      const opts = q.options.map(o => o.trim()).filter(Boolean);
+      if (opts.length < 2) throw new Error(`"${q.text}" needs at least two options.`);
+      out.criteria = Object.fromEntries(opts.map(o => [o, o]));
+    } else {
+      const lv = q.levels.map(o => o.trim()).filter(Boolean);
+      if (lv.length < 2) throw new Error(`"${q.text}" needs at least two levels.`);
+      out.criteria = lv;
+    }
+    questions[slug(q.text, i, used)] = out;
+  });
+  if (!Object.keys(questions).length) throw new Error("Add at least one question.");
+  const s = {name: $("name").value.trim() || "untitled", variables, documents: paths, questions, state: {}};
+  if ($("notes").value.trim()) s.state.notes = $("notes").value.trim();
+  if (dir) s._dir = dir;
+  return s;
+}
+function fromScenario(s) {
+  dir = s._dir || null; files = []; paths = [...(s.documents || [])]; drawFiles();
+  $("name").value = s.name || "";
+  $("notes").value = (s.state && s.state.notes) || "";
+  $("vars").innerHTML = ""; Object.entries(s.variables || {}).forEach(([k, v]) => addVar(k, v));
+  qs = Object.values(s.questions || {}).map(q => {
+    const f = newQ(q.type); f.text = q.label || q.instructions || "";
+    if (q.type === "noul") { f.yes = q.criteria?.true || ""; f.no = q.criteria?.false || ""; f.threshold = Math.round((q.threshold ?? .5) * 100); }
+    if (q.type === "choice") f.options = Object.keys(q.criteria || {});
+    if (q.type === "score") f.levels = [...(q.criteria || [])];
+    return f;
+  });
+  drawQs(); $("result").innerHTML = "";
+}
+function reset() { fromScenario({questions: {}}); qs = [newQ("noul")]; drawQs(); }
+
+/* ---------- results ---------- */
+function bars(probs, top) {
+  return `<div class="bars">${Object.entries(probs || {}).sort((a, b) => b[1] - a[1]).map(([k, p]) =>
+    `<div class="${k === top ? "top" : ""}"><span>${esc(k)}</span><div class="bar"><i style="width:${p * 100}%"></i></div><span>${pct(p)}</span></div>`).join("")}</div>`;
+}
+function render(rec) {
+  if (rec.status === "error") return `<p class="err">${esc(rec.error)}</p>`;
+  const out = Object.entries(rec.answers).map(([k, a]) => {
+    const q = rec.questions[k], title = esc(q.label || q.instructions);
+    if (a.type === "noul") {
+      const t = q.threshold ?? .5, yes = a.value >= t, unsure = a.value >= .3 && a.value < .7;
+      return `<div class="answer"><div>${title}</div><div class="big">${yes ? "Yes" : "No"}
+        <span class="pill ${unsure ? "unsure" : yes ? "yes" : "no"}">${unsure ? "unsure · " : ""}${pct(a.value)} chance of yes</span></div></div>`;
+    }
+    if (a.type === "choice") {
+      return `<div class="answer"><div>${title}</div><div class="big">${esc(a.choice)} <span class="pill">confidence ${pct(a.confidence)}</span></div>${bars(a.probabilities, a.choice)}</div>`;
+    }
+    const legend = q.criteria, probs = Object.fromEntries(Object.entries(a.probabilities || {}).map(([i, p]) => [legend[+i] ?? i, p]));
+    return `<div class="answer"><div>${title}</div><div class="big">${esc(a.level)} <span class="pill">score ${(+a.score).toFixed(2)} of ${legend.length - 1}${a.confidence != null ? " · confidence " + pct(a.confidence) : ""}</span></div>${bars(probs, a.level)}</div>`;
+  }).join("");
+  const m = rec.meta || {};
+  return out + `<details style="margin-top:10px"><summary>${m.seconds}s · cost $${(+m.cost || 0).toFixed(5)}${rec.source ? " · " + esc(rec.source.split("/").pop()) : ""} · technical details</summary><pre>${esc(JSON.stringify(rec, null, 2))}</pre></details>`;
+}
+async function history() {
+  const runs = await api("/api/runs" + ($("kind").value ? "?kind=" + $("kind").value : ""));
+  $("history").innerHTML = runs.map((r, i) => `<div data-i="${i}"><b>${esc(r.source ? r.source.split("/").pop() : r.scenario)}</b>
+    <span class="hint">· ${new Date(r.at * 1000).toLocaleString()}${r.status === "error" ? " · failed" : ""}</span></div>`).join("") || `<p class="hint">No runs yet.</p>`;
+  $("history").querySelectorAll("div[data-i]").forEach(d => d.onclick = () => $("result").innerHTML = render(runs[d.dataset.i]));
+}
+
+/* ---------- actions ---------- */
+$("run").onclick = async () => {
+  let s; try { s = toScenario(); } catch (e) { $("result").innerHTML = `<p class="err">${esc(e.message)}</p>`; return; }
+  if (!files.length && !paths.length && !s.state.notes && !Object.keys(s.variables).length) {
+    $("result").innerHTML = `<p class="err">Add a document or some context for Jev to read.</p>`; return;
+  }
+  $("run").disabled = true; $("result").innerHTML = `<p class="hint">Asking Jev…</p>`;
+  try { $("result").innerHTML = render(await api("/api/run", {scenario: s, uploads: files})); history(); }
+  catch (e) { $("result").innerHTML = `<p class="err">${esc(e.message)}</p>`; }
+  $("run").disabled = false;
 };
-$("preview").onclick = () => go("/api/preview");
-$("run").onclick = () => go("/api/run");
 $("save").onclick = async () => {
-  try { const r = await api("/api/save", {scenario: current()}); $("status").textContent = "Saved " + r.saved; refresh(); }
-  catch (e) { $("status").textContent = e.message; }
+  try {
+    const s = toScenario();
+    if (files.length) $("status").textContent = "Saved. Note: uploaded files aren't saved, only the questions.";
+    const r = await api("/api/save", {scenario: s});
+    if (!files.length) $("status").textContent = "Saved " + r.saved;
+    refresh();
+  } catch (e) { $("status").textContent = e.message; }
 };
+$("new").onclick = reset;
+$("pick").onchange = async () => { if ($("pick").value) fromScenario(await api("/api/scenario/" + $("pick").value)); };
 $("kind").onchange = history;
-refresh(); history();
-load({name: "", questions: {}});
+async function refresh() {
+  const list = await api("/api/scenarios");
+  $("pick").innerHTML = `<option value="">Open saved…</option>` + list.map(s => `<option>${esc(s.name)}</option>`).join("");
+}
+refresh(); history(); reset();
 </script>
 </body>
 </html>

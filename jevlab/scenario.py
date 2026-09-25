@@ -7,7 +7,7 @@ from pathlib import Path
 
 from . import client, extract, store
 
-VAR = re.compile(r"\{\{\s*([A-Za-z_][\w.-]*)\s*\}\}")
+VAR = re.compile(r"\{\{?\s*([A-Za-z_][\w.-]*)\s*\}\}?")  # {name} or {{name}}
 
 
 def fill(value, variables):
@@ -71,7 +71,7 @@ def decide(questions, answers):
             elif a["choice"] not in q.get("ignore", []):
                 selected.append("%s=%s" % (k, a["choice"]))
         else:
-            selected.append("%s=%d" % (k, a["score"]))
+            selected.append("%s=%s" % (k, q["criteria"][round(a["score"])]))
     return {"selected": selected, "uncertain": uncertain}
 
 

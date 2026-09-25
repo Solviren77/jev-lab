@@ -46,7 +46,9 @@ def validate(questions):
 
 def body(state, questions):
     validate(questions)
-    b = {"model": MODEL, "state": state, "questions": questions}
+    # Local policy fields (threshold, label, ignore) stay local; Jev gets only its own fields.
+    sent = {k: {f: q[f] for f in ("type", "instructions", "criteria") if f in q} for k, q in questions.items()}
+    b = {"model": MODEL, "state": state, "questions": sent}
     size = len(json.dumps(b).encode())
     if size > MAX_BYTES:
         raise JevError("Request is %d bytes (limit %d); trim or split documents" % (size, MAX_BYTES))
@@ -75,9 +77,10 @@ def normalize(raw, questions):
         else:
             s = a.get("score")
             top = len(questions[name]["criteria"]) - 1
-            if not isinstance(s, int) or not 0 <= s <= top:
+            if isinstance(s, bool) or not isinstance(s, (int, float)) or not 0 <= s <= top:
                 raise JevError("%s: invalid score" % name)
-            out[name] = {"type": t, "score": s, "value": s / top, "level": questions[name]["criteria"][s]}
+            out[name] = {"type": t, "score": s, "value": s / top, "level": questions[name]["criteria"][round(s)],
+                         "probabilities": a.get("probabilities", {}), "confidence": a.get("confidence")}
     return out
 
 

@@ -20,7 +20,7 @@ The API key is read from the macOS Keychain: service `jev-api-beast`, account `a
 }
 ```
 
-- `{{name}}` is replaced from `variables` (overridable per run) in questions, state and document paths.
+- `{name}` (or `{{name}}`) is replaced from `variables` (overridable per run) in questions, state and document paths.
 - Documents (`.txt .md .json .csv .pdf .docx .eml`) are extracted to text and sent as `state.documents[filename]`. Relative paths resolve from the scenario file's folder.
 - Results: Noul → P(yes), selected at `threshold` (default 0.5); Choice → option + probabilities (optional `threshold` on confidence, `ignore` list); Score → level. 0.3–0.7 Nouls are flagged uncertain. Thresholds are your policy, not calibrated accuracy.
 - Requests over 100 KB are refused; split long documents.
@@ -28,7 +28,7 @@ The API key is read from the macOS Keychain: service `jev-api-beast`, account `a
 ## Use
 
 ```sh
-python3 -m jevlab serve                      # http://127.0.0.1:8765
+python3 -m jevlab serve   # http://127.0.0.1:8765 — no-code page: drop files, type questions, pick Yes/No, Pick one or Rate on a scale
 python3 -m jevlab run examples/contract-review.json --var party="Northwind LLC" --doc ~/file.pdf
 python3 -m jevlab run examples/contract-review.json --dry-run
 python3 -m jevlab categorize examples/document-sorter.json ~/Documents/Inbox --limit 5
