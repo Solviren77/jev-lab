@@ -39,10 +39,10 @@ button.x { border:0; background:none; color:var(--muted); font-size:18px; line-h
 .answer { border-bottom:1px solid var(--line); padding:12px 0; }
 .answer:last-child { border-bottom:0; }
 .big { font-size:18px; font-weight:600; }
-.bars div { display:grid; grid-template-columns:minmax(80px,40%) 1fr 44px; gap:8px; align-items:center; font-size:13px; margin-top:4px; }
+.bars > div { display:grid; grid-template-columns:minmax(80px,40%) 1fr 44px; gap:8px; align-items:center; font-size:13px; margin-top:4px; }
 .bar { height:8px; background:var(--line); border-radius:4px; overflow:hidden; }
 .bar i { display:block; height:100%; background:var(--accent); }
-.bars .top .bar i { background:var(--good); }
+.bars > .top .bar i { background:var(--good); }
 .pill { display:inline-block; padding:1px 8px; border-radius:10px; font-size:12px; border:1px solid var(--line); color:var(--muted); margin-left:6px; }
 .pill.yes { color:var(--good); border-color:var(--good); }
 .pill.no { color:var(--muted); }
