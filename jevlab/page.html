@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jev Lab</title>
+<style>
+:root { --bg:#fafaf8; --panel:#fff; --ink:#1d1d1b; --muted:#6b6b66; --line:#e3e2dc; --accent:#2f5d8a; --good:#2e7d4f; --warn:#a86b00; --bad:#b3261e; }
+@media (prefers-color-scheme: dark) { :root { --bg:#161615; --panel:#1f1f1d; --ink:#ecebe6; --muted:#9a9993; --line:#33332f; --accent:#7fa8d4; --good:#6cc08b; --warn:#e0a84a; --bad:#f08077; } }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.45 -apple-system, system-ui, sans-serif; }
+header { display:flex; gap:12px; align-items:center; padding:12px 16px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+h1 { font-size:16px; margin:0 12px 0 0; }
+main { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px; padding:16px; }
+@media (max-width:900px) { main { grid-template-columns:1fr; } }
+section { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:14px; margin-bottom:16px; }
+h2 { font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin:0 0 10px; }
+input, textarea, select, button { font:inherit; color:inherit; background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:6px 8px; }
+textarea { width:100%; font:12px/1.4 ui-monospace, Menlo, monospace; min-height:320px; resize:vertical; }
+button { cursor:pointer; }
+button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+.row { display:flex; gap:6px; margin-bottom:6px; }
+.row input { flex:1; min-width:0; }
+.muted { color:var(--muted); }
+.err { color:var(--bad); white-space:pre-wrap; }
+table { width:100%; border-collapse:collapse; }
+td, th { text-align:left; padding:5px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+.bar { height:6px; background:var(--line); border-radius:3px; min-width:80px; }
+.bar i { display:block; height:100%; border-radius:3px; background:var(--accent); }
+.tag { display:inline-block; padding:1px 6px; border-radius:10px; border:1px solid var(--line); margin:2px 4px 2px 0; font-size:12px; }
+.tag.sel { border-color:var(--good); color:var(--good); }
+.tag.unc { border-color:var(--warn); color:var(--warn); }
+pre { white-space:pre-wrap; font-size:12px; max-height:300px; overflow:auto; }
+.history div { padding:6px 0; border-bottom:1px solid var(--line); cursor:pointer; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Jev Lab</h1>
+  <select id="pick"></select>
+  <input id="name" placeholder="scenario name" size="18">
+  <button id="save">Save</button>
+  <span id="status" class="muted"></span>
+</header>
+<main>
+  <div>
+    <section>
+      <h2>Variables</h2>
+      <div id="vars"></div>
+      <button id="addVar">Add variable</button>
+      <p class="muted">Use <code>{{name}}</code> in questions, state or document paths.</p>
+    </section>
+    <section>
+      <h2>Documents</h2>
+      <div id="docs"></div>
+      <button id="addDoc">Add file path</button>
+      <label><input type="file" id="upload" multiple hidden><button onclick="upload.click()">Upload files…</button></label>
+      <div id="uploaded" class="muted"></div>
+    </section>
+    <section>
+      <h2>Questions and extra state (JSON)</h2>
+      <textarea id="spec" spellcheck="false"></textarea>
+      <p class="muted">Types: <code>noul</code> (P yes; optional <code>threshold</code>), <code>choice</code> (<code>criteria</code>: {option: description}), <code>score</code> (<code>criteria</code>: [level 0, level 1, …]).</p>
+    </section>
+  </div>
+  <div>
+    <section>
+      <button id="preview">Preview request</button>
+      <button id="run" class="primary">Run (paid call)</button>
+      <div id="result" style="margin-top:12px"></div>
+    </section>
+    <section>
+      <h2>History</h2>
+      <select id="kind"><option value="">All</option><option value="scenario">Scenarios</option><option value="categorize">Background categorizations</option></select>
+      <div id="history" class="history"></div>
+    </section>
+  </div>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+let files = [];
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+async function api(path, body) {
+  const r = await fetch(path, body ? {method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify(body)} : {});
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || r.status);
+  return j;
+}
+function row(parent, a, b, pa, pb) {
+  const d = document.createElement("div"); d.className = "row";
+  d.innerHTML = `<input placeholder="${pa}" value="${esc(a)}">` + (pb ? `<input placeholder="${pb}" value="${esc(b)}">` : "") + `<button>×</button>`;
+  d.querySelector("button").onclick = () => d.remove();
+  parent.appendChild(d);
+}
+let dir = null;
+function load(s) {
+  dir = s._dir || null;
+  $("name").value = s.name || "";
+  $("vars").innerHTML = ""; $("docs").innerHTML = ""; files = []; $("uploaded").textContent = "";
+  Object.entries(s.variables || {}).forEach(([k, v]) => row($("vars"), k, v, "name", "value"));
+  (s.documents || []).forEach(p => row($("docs"), p, null, "~/path/to/file.pdf"));
+  const rest = {questions: s.questions || {}};
+  for (const k of ["state", "watch", "output_jsonl"]) if (s[k] && Object.keys(s[k]).length) rest[k] = s[k];
+  $("spec").value = JSON.stringify(rest, null, 2);
+}
+function current() {
+  const spec = JSON.parse($("spec").value);
+  const variables = {};
+  $("vars").querySelectorAll(".row").forEach(r => { const [k, v] = r.querySelectorAll("input"); if (k.value) variables[k.value] = v.value; });
+  const documents = [...$("docs").querySelectorAll("input")].map(i => i.value).filter(Boolean);
+  return {name: $("name").value || "untitled", variables, documents, state: {}, ...spec, ...(dir ? {_dir: dir} : {})};
+}
+async function refresh() {
+  const list = await api("/api/scenarios");
+  $("pick").innerHTML = `<option value="">Open…</option>` + list.map(s => `<option>${esc(s.name)}</option>`).join("");
+}
+function render(rec) {
+  if (rec.status === "dry-run") return `<p class="muted">${rec.request_bytes} bytes · no call made</p><pre>${esc(JSON.stringify(rec.request, null, 2))}</pre>`;
+  if (rec.status === "error") return `<p class="err">${esc(rec.error)}</p>`;
+  const rows = Object.entries(rec.answers).map(([k, a]) => {
+    const v = a.value ?? 0;
+    const detail = a.type === "choice" ? `${esc(a.choice)} <span class="muted">${Object.entries(a.probabilities).sort((x,y)=>y[1]-x[1]).slice(0,3).map(([o,p])=>esc(o)+" "+p).join(" · ")}</span>`
+      : a.type === "score" ? `${a.score}: ${esc(a.level)}` : "";
+    return `<tr><td>${esc(k)}</td><td>${v.toFixed(2)}</td><td><div class="bar"><i style="width:${v*100}%"></i></div></td><td>${detail}</td></tr>`;
+  }).join("");
+  const m = rec.meta || {};
+  return `<div>${(rec.selected||[]).map(s=>`<span class="tag sel">${esc(s)}</span>`).join("")}${(rec.uncertain||[]).map(s=>`<span class="tag unc">? ${esc(s)}</span>`).join("")}</div>
+    <table><tr><th>Question</th><th>Value</th><th></th><th></th></tr>${rows}</table>
+    <p class="muted">${m.seconds}s · ${m.input_tokens} in / ${m.output_tokens} out · $${m.cost}${rec.source ? " · " + esc(rec.source) : ""}</p>`;
+}
+async function history() {
+  const runs = await api("/api/runs" + ($("kind").value ? "?kind=" + $("kind").value : ""));
+  $("history").innerHTML = runs.map((r, i) => `<div data-i="${i}"><b>#${r.id}</b> ${esc(r.scenario)} <span class="muted">${new Date(r.at*1000).toLocaleString()} · ${r.status}${r.source ? " · " + esc(r.source.split("/").pop()) : ""}</span><br>${(r.selected||[]).map(s=>`<span class="tag sel">${esc(s)}</span>`).join("")}</div>`).join("") || `<p class="muted">No runs yet.</p>`;
+  $("history").querySelectorAll("div[data-i]").forEach(d => d.onclick = () => $("result").innerHTML = render(runs[d.dataset.i]));
+}
+async function go(path) {
+  $("result").innerHTML = `<p class="muted">Working…</p>`;
+  try {
+    const rec = await api(path, {scenario: current(), uploads: files});
+    $("result").innerHTML = render(rec);
+    if (path === "/api/run") history();
+  } catch (e) { $("result").innerHTML = `<p class="err">${esc(e.message)}</p>`; }
+}
+$("pick").onchange = async () => { if ($("pick").value) load(await api("/api/scenario/" + $("pick").value)); };
+$("addVar").onclick = () => row($("vars"), "", "", "name", "value");
+$("addDoc").onclick = () => row($("docs"), "", null, "~/path/to/file.pdf");
+$("upload").onchange = async e => {
+  for (const f of e.target.files) {
+    const b = new Uint8Array(await f.arrayBuffer()); let s = "";
+    for (let i = 0; i < b.length; i += 32768) s += String.fromCharCode(...b.subarray(i, i + 32768));
+    files.push({name: f.name, base64: btoa(s)});
+  }
+  $("uploaded").textContent = "Uploaded: " + files.map(f => f.name).join(", ");
+};
+$("preview").onclick = () => go("/api/preview");
+$("run").onclick = () => go("/api/run");
+$("save").onclick = async () => {
+  try { const r = await api("/api/save", {scenario: current()}); $("status").textContent = "Saved " + r.saved; refresh(); }
+  catch (e) { $("status").textContent = e.message; }
+};
+$("kind").onchange = history;
+refresh(); history();
+load({name: "", questions: {}});
+</script>
+</body>
+</html>

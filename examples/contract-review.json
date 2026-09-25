@@ -1,0 +1,14 @@
+{
+  "name": "contract-review",
+  "variables": {"party": "Acme Corp", "max_term_months": "24"},
+  "documents": ["docs/sample-agreement.txt"],
+  "questions": {
+    "auto_renews": {"type": "noul", "instructions": "Does the agreement renew automatically unless a party gives notice?"},
+    "party_indemnifies": {"type": "noul", "instructions": "Does {{party}} agree to indemnify the other party?", "threshold": 0.7},
+    "term_over_limit": {"type": "noul", "instructions": "Is the initial term longer than {{max_term_months}} months?"},
+    "governing_law": {"type": "choice", "instructions": "Which jurisdiction's law governs the agreement?",
+      "criteria": {"arizona": "Arizona law", "delaware": "Delaware law", "other": "Another jurisdiction", "none": "No governing-law clause"}},
+    "risk": {"type": "score", "instructions": "How much termination risk does this agreement put on {{party}}?",
+      "criteria": ["Low: {{party}} can exit easily", "Moderate: notice period or fee to exit", "High: long lock-in with penalties"]}
+  }
+}

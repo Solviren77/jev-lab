@@ -1,0 +1,7 @@
+SERVICES AGREEMENT between Acme Corp ("Customer") and Northwind LLC ("Provider").
+1. Term. The initial term is thirty-six (36) months. The agreement renews automatically for successive
+twelve-month terms unless either party gives ninety (90) days' written notice before the end of the term.
+2. Termination. Customer may terminate early only on payment of the fees remaining for the current term.
+3. Indemnity. Customer shall indemnify and hold Provider harmless against third-party claims arising
+from Customer's data.
+4. Governing law. This agreement is governed by the laws of the State of Delaware.

@@ -1,0 +1,16 @@
+{
+  "name": "document-sorter",
+  "watch": {"folders": ["~/Documents/Inbox"], "extensions": [".pdf", ".docx", ".eml", ".txt", ".md"]},
+  "output_jsonl": "~/.jev-lab/document-sorter.jsonl",
+  "state": {"owner": "Matt Clarke"},
+  "questions": {
+    "kind": {"type": "choice", "instructions": "What kind of document is document.text?",
+      "criteria": {"invoice": "A bill or invoice requesting payment", "receipt": "Proof of a completed payment",
+        "contract": "An agreement or its amendment", "statement": "A bank, card or investment statement",
+        "tax": "A tax form or tax correspondence", "medical": "Medical records, bills or insurance EOBs",
+        "correspondence": "A letter or email that is none of the above", "other": "None of these"}},
+    "action_needed": {"type": "noul", "instructions": "Does document.text ask the owner to do something by a deadline (pay, sign, respond, file)?"},
+    "financial": {"type": "noul", "instructions": "Does document.text concern money owed, paid, held or invested by the owner?"},
+    "sensitive": {"type": "noul", "instructions": "Does document.text contain account numbers, tax IDs, health details or other sensitive personal data?"}
+  }
+}
