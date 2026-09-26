@@ -148,6 +148,7 @@ def main():
     print("sources: %s; reachable: %s" % ({k: len(v) for k, v in sources.items()},
           dict(collections.Counter(kind for f in funcs.values() for kind in f["reached_from"]))))
 
+    (out / "FUNCS.json").write_text(json.dumps(funcs, indent=1))
     # ---- stage 3: routed questions with path facts, tuned cutoffs
     cut = json.loads((HERE / "run-11/CUTOFFS.json").read_text())
     jobs = []

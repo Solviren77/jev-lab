@@ -265,3 +265,25 @@ by validated integer/UUID ids, hashed filenames, hard-coded names, or symlink ch
 Reading: the codebase is clean and heavily defended, so the test mostly measures false alarms. The
 path/injection/state questions (weak or zero-yield on docket-49 too) produce all the noise; the AI
 questions had almost nothing to find (one model call). The line filter's value did not carry over.
+
+# Experiment 12: prompt variants on fixed held-out data (higgins-workspace, paid Sonnet key reused)
+
+Truth: one real problem in all app code (do_POST state_change_unguarded). 339 routed functions × 6
+variants, 2,034 calls, 21.7 s, $0.10. Only the prompt changes; facts and functions are identical.
+
+| Variant | String-built flags @0.5 / @cutoff | Path @0.5 / @cutoff | State change @0.5 / @cutoff | Real item: value, rank in its question |
+|---|---|---|---|---|
+| 0 baseline (path-facts preamble) | 16 / 6 | 28 / 12 | 4 / 4 | 0.72, 2nd |
+| 1 no preamble | 21 / 11 | 35 / 23 | 22 / 22 | 0.81, 2nd |
+| 2 "validated/hashed/constant = no" in criteria | 12 / 4 | 25 / 7 | 5 / 5 | 0.70, 2nd |
+| 3 attacker framing ("could someone sending… choose…") | 4 / 2 | 11 / 2 | 14 / 14 | 0.53, 13th |
+| 4 presence split, combined in code | 6 / 1 | 6 / 1 | 29 / 29 | 0.06, 124th |
+| 5 statements | 3 / 2 | 24 / 8 | 3 / 3 | 0.48, 4th |
+
+Lessons: the "only count it if outside input reaches it unprotected" preamble is doing heavy lifting
+(removing it multiplies state-change flags ×5). Attacker framing is the best wording for injection and
+path questions (cuts path flags 12 → 2) but hurts the state question. Splitting into presence questions
+fixes injection/path but buries the real state-change finding: do_POST HAS an origin check for most routes,
+Jev answers literally, and the real issue (two routes use a weaker check) is a partial-coverage judgment.
+Best per-question mix from this run: attacker framing for string-built and path, criteria variant 2 for
+state change → 9 flags at cutoff (was 22), real finding still 2nd in its question.
