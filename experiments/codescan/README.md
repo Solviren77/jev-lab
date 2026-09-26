@@ -251,3 +251,17 @@ and false flags at about the same rate, so it adds no discrimination beyond the 
 Per question after the "no line" step: path-from-input 13 → 5 (0 real), string-built 5 → 1 (lost the one
 real, practice_context), size limit 20 → 15 (14 → 12 real), output-unvalidated 15 → 12 (3 real kept).
 Bonus: every kept flag now carries a line number (accuracy of the line not yet checked).
+
+# Experiment 11: held-out test on higgins-workspace (9e670f1)
+
+Unchanged questions, cutoffs and line filter; generic source detection (route decorators, model-API
+patterns). 29 app files, 429 functions, 343 routed; 3 HTTP entry points, 1 model-calling function.
+11.2 s, $0.055. First pass 23 flags; line filter kept 10, dropped 13.
+Sonnet key (4 reviewers, independent sweep first, then verdicts): exactly 1 real problem in the app code
+(low: do_POST scratch-pad and voicemail-reviewed routes use the looser _local_request gate instead of the
+exact Origin check the rest of the handler uses). Jev's first pass flagged it (0.73); the line filter
+dropped it. Kept flags: 0 of 10 real (6 path-from-input, 3 state change, 1 string-built) — all neutralised
+by validated integer/UUID ids, hashed filenames, hard-coded names, or symlink checks.
+Reading: the codebase is clean and heavily defended, so the test mostly measures false alarms. The
+path/injection/state questions (weak or zero-yield on docket-49 too) produce all the noise; the AI
+questions had almost nothing to find (one model call). The line filter's value did not carry over.
