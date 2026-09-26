@@ -49,3 +49,27 @@ Precision / recall vs the key (threshold 0.5):
 | facts | file | 0.91 / 0.59 | 0.85 / 0.88 | 0.79 / 0.39 | 4/5 |
 
 Duplicate: every variant flagged some, the key confirmed none.
+
+# Experiment 3: titration (13 narrow questions, 8 files, 128 functions)
+
+One call per function with all 13 questions (examples-style definitions): 128 calls, 2.1 s, $0.0098.
+Blind Claude key per file. Best yes-threshold per question by F1. "Yes" = key count of true cases.
+
+| Question | Key yes | Jev avg on yes / no | Best threshold | Flagged | Precision | Recall | Tier |
+|---|---|---|---|---|---|---|---|
+| mixes_io_logic | 46 | 0.89 / 0.19 | 0.5 | 50 | 0.90 | 0.98 | Trust |
+| logs_sensitive | 7 | 0.75 / 0.13 | 0.7 | 6 | 1.00 | 0.86 | Trust (small n) |
+| broad_except | 2 | 0.89 / 0.08 | 0.2 | 3 | 0.67 | 1.00 | Trust (tiny n; also doable in code) |
+| hardcoded_config | 26 | 0.59 / 0.22 | 0.5 | 28 | 0.75 | 0.81 | Usable |
+| hidden_side_effect | 5 | 0.82 / 0.19 | 0.7 | 8 | 0.62 | 1.00 | Usable as a filter |
+| more_than_name | 17 | 0.62 / 0.25 | 0.6 | 15 | 0.73 | 0.65 | Usable |
+| swallows_errors | 6 | 0.85 / 0.11 | 0.5 | 12 | 0.50 | 1.00 | Usable as a filter |
+| should_split | 14 | 0.70 / 0.32 | 0.6 | 22 | 0.55 | 0.86 | Usable as a filter |
+| inconsistent_returns | 5 | 0.77 / 0.30 | 0.8 | 6 | 0.50 | 0.60 | Weak |
+| repeated_io | 20 | 0.48 / 0.27 | 0.5 | 20 | 0.55 | 0.55 | Weak (needs cross-function tracing) |
+| docstring_mismatch | 2 | 0.40 / 0.20 | – | – | 0.09 | – | Drop |
+| over_engineered | 1 | 0.32 / 0.28 | – | – | 0.02 | – | Drop |
+| misleading_name | 0 | – / 0.27 | – | 93 at 0.2 | – | – | Drop (no positives; over-flags) |
+
+Caveats: rare categories have 1–7 positives, so their scores are fragile; the key is one Claude reviewer
+per file (it disagreed with the experiment-1 key on some functions, e.g. operations_for).
