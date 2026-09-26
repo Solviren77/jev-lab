@@ -69,14 +69,62 @@ def sink_facts(fn_node, src):
     return sorted(set(facts))
 
 
-def own_protections(code):
+SENDS = {"urlopen", "_post", "run", "claude", "codex", "agent", "ask", "_call", "generate", "post", "request"}
+SKIP_SLICE = re.compile(r"\b(exc|e|err|error|problem)\b|\.read\(\)|str\(")
+
+
+def names_in(node):
+    return {n.id for n in ast.walk(node) if isinstance(n, ast.Name)}
+
+
+def input_cap(node):
+    """True if a length check or slice applies to a value this function then sends to a model/transport."""
+    assigned = {}
+    for n in ast.walk(node):
+        if isinstance(n, ast.Assign):
+            for t in n.targets:
+                if isinstance(t, ast.Name):
+                    assigned.setdefault(t.id, set()).update(names_in(n.value))
+    def expand(names):
+        out, todo = set(), list(names)
+        while todo:
+            x = todo.pop()
+            if x not in out:
+                out.add(x); todo += list(assigned.get(x, ()))
+        return out
+    checked = set()
+    for n in ast.walk(node):
+        if isinstance(n, ast.Compare) and isinstance(n.left, ast.Call) and getattr(n.left.func, "id", "") == "len" \
+                and any(isinstance(op, (ast.Gt, ast.GtE, ast.Lt, ast.LtE)) for op in n.ops):
+            checked |= expand(names_in(n.left))
+        if isinstance(n, ast.Subscript) and isinstance(n.slice, ast.Slice) and n.slice.upper is not None \
+                and n.slice.lower is None:
+            seg = ast.unparse(n.value)
+            if not SKIP_SLICE.search(seg):
+                checked |= expand(names_in(n.value)) | {"__slice_%d" % id(n)}
+                for m in ast.walk(node):  # the sliced expression's assignment target counts too
+                    if isinstance(m, ast.Assign) and n in list(ast.walk(m.value)):
+                        checked |= {t.id for t in m.targets if isinstance(t, ast.Name)}
+    if not checked:
+        return False
+    for _, name, call in calls_in(node):
+        if name in SENDS:
+            sent = set()
+            for a in list(call.args) + [k.value for k in call.keywords]:
+                sent |= expand(names_in(a))
+            if sent & checked:
+                return True
+    return False
+
+
+def own_protections(code, node=None):
     """Protections a function applies itself, found by pattern; used downstream of its callers."""
     p = []
     if re.search(r"\bcheck\(|probabilities\(|jsonschema|validate\w*\(|isinstance\(.*(dict|list|str)", code) and \
             re.search(r"raise\s+\w*(Error|Validation)", code):
         p.append("validates data and raises on bad input/output")
-    if re.search(r"MAX_\w+|len\([^)]*\)\s*[<>]=?\s*\w+|\[:\s*\w+\]|truncat|max_chars", code):
-        p.append("caps or checks size")
+    if node is not None and input_cap(node):
+        p.append("caps size of content it sends")
     if re.search(r"except\s*\(?[^:]*(ProviderError|Exception|Error)", code):
         p.append("catches errors")
     if re.search(r"_trusted_host|[Oo]rigin", code):
@@ -110,7 +158,7 @@ def graph(out):
                                                         re.search(r"parents|is_relative_to|relative_to", code)),
                               "catches": sorted(set(re.findall(r"except\s*\(?\s*([\w., ]+)", code))),
                               "sinks": sink_facts(node, src),
-                              "own_protections": own_protections(code)}
+                              "own_protections": own_protections(code, node)}
                 by_name[node.name].append(key)
     callers = collections.defaultdict(set)
     for k, f in funcs.items():

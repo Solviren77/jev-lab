@@ -200,3 +200,20 @@ input sent), a false protection. Validation/error facts worked: output-unvalidat
 failure-unhandled 19 → 8 (3/4 kept), state change 4 → 0 (lost 1 low).
 Hybrid (downstream facts for all questions except size limit): ~113 flags with 29 of 31 real kept.
 Lesson: a wrong "protected" fact is worse than no fact — it hides real problems.
+
+# Experiment 8: input-specific size-cap detector (run-10)
+
+"Caps size" now requires a length check or slice on a value the same function then passes to a model or
+transport call (error-text slices ignored). 8 functions qualify (jev.ask MAX_BYTES, assistant.turn,
+provider.agent, matter_update.prepare, …); provider.claude/_post no longer do. 390 calls, 6.5 s, $0.029.
+
+| Version | Flags at 0.5 | Sonnet-real kept |
+|---|---|---|
+| upstream facts only (run-08) | 139 | 31/31 |
+| + downstream, loose size pattern (run-09) | 89 | 13/31 |
+| + downstream, fixed size detector (run-10) | 95 | 20/31 |
+
+Size-limit: 10 of 19 real kept (was 3). Of the 9 still dropped: 4 sit behind jev.ask's genuine 100 KB cap
+(jev_templates, jev_topic_review, guarded_write) — arguably Sonnet's "real" was too strict; 2 sit behind
+assistant.turn/provider.agent caps; mail_classify.propose was dropped because only its Jev branch is capped
+(the graph is branch-blind); write_row, provider.run and guarded_generation fell to 0.36–0.48, just under 0.5.
