@@ -110,3 +110,22 @@ Rewrites (scored against the experiment-3 key; avg Jev value on key-yes / key-no
 | hardcoded_config (original) | 0.59 | 0.22 | 36% | 0.5 | 0.69 | 0.77 | 0.73 |
 | hardcoded_config_v2 (operator might change it) | 0.61 | 0.19 | 20% | 0.3 | 0.66 | 0.96 | 0.78 |
 | hardcoded_config_v3 (any literal URL/path/model/zone/port/limit) | 0.84 | 0.31 | 23% | 0.7 | 0.69 | 0.85 | 0.76 |
+
+# Section 1: classification of all docket-49 functions (8f9a15e1)
+
+5 Pick-one questions (role, layer, domain, data sensitivity, strongest effect) per function; 1,783 functions
+in 316 files (incl. tests and build scripts), 20.9 s, $0.13, 0 errors. Output: run-06/CLASSES.json (local).
+Application code (excluding prototype/build, tests, experiments, docs, tools): 490 functions.
+
+| Question | Application-code distribution |
+|---|---|
+| Role | data access 107, transformation 90, business logic 53, AI call 42, utility 41, external call 35, configuration 34, rendering 32, validation 28, request handler 16 |
+| Layer | domain 148, integration 90, storage 87, infrastructure 54, API 35, UI 14 |
+| Domain | email 96, matters 62, general 61, AI platform 57, calendar 56, documents 55, assistant 25, observability 24, tasks/notes 22, navigation 15, intake 10 |
+| Sensitivity | legal content 209, none 103, app data 103, personal 42, credentials 30 |
+| Effect | writes local 152, none 147, reads 140, writes external 49 |
+
+Spot checks: the 30 "credentials" functions are the Google OAuth, Keychain/API-key and provider-post paths as
+expected. "Writes external" also counts sending content to AI providers, so it doubles as a data-leaves-the-
+machine inventory; answers under ~0.5 confidence there are doubtful. 127 of 1,293 tooling-path functions were
+not labelled tooling (mostly helpers inside scripts labelled by what they do).
