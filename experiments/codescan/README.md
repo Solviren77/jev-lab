@@ -231,3 +231,23 @@ provider.agent sends the whole matter corpus plus accepted documents as context 
 size detector credited agent for capping other content), fixed_tokens failure uncaught in the triage CLI
 (low). Updated: 27 of 29 real in 76 flags, vs 139 flags in run-08.
 "Path from outside input" has 0 real findings in docket-49 at any cutoff: keep only as an inventory.
+
+# Experiment 10: nested calls — pattern 1 (localise → judge) and 5 (Jev picks, code fetches, Jev judges)
+
+170 candidates (run-11 answers ≥ cutoff − 0.15); round A 293 calls, round B 129 calls, 6.6 s, $0.022.
+v1 asked "which line shows the problem"; for absence problems Jev answered "none" (nothing to point at).
+v2 anchors absence problems on a present line (the model call, the data write) — then localisation works.
+
+On the 76 run-11 flags (27 real of 29):
+| Filter | Flags | Real |
+|---|---|---|
+| none (run-11) | 76 | 27 |
+| drop if round A picks "no line" | 56 | 25 |
+| + confirm ≥ 0.3 | 47 | 22 |
+| + confirm ≥ 0.5 | 29 | 14 |
+Pattern 5 changed nothing: Jev mostly answered "none of these" when asked which caller/callee protects,
+and where it named one, the fetched code rarely scored ≥ 0.7 as protecting. The confirm round drops real
+and false flags at about the same rate, so it adds no discrimination beyond the "no line" step.
+Per question after the "no line" step: path-from-input 13 → 5 (0 real), string-built 5 → 1 (lost the one
+real, practice_context), size limit 20 → 15 (14 → 12 real), output-unvalidated 15 → 12 (3 real kept).
+Bonus: every kept flag now carries a line number (accuracy of the line not yet checked).
