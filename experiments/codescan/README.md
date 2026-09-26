@@ -92,3 +92,21 @@ Dropped questions (misleading name, over-engineered, docstring mismatch): 0 true
 Docket-49 flags checked by Claude: 0.5–0.6 56%, 0.6–0.7 71%, 0.7–0.8 73%, 0.8–0.9 90%, 0.9–1.0 91% confirmed.
 Reading: below 0.5 is a reliable no; 0.5–0.7 overstates (a 0.6 is right about a third of the time on the
 strict key); 0.8+ is right about 9 times in 10.
+
+# Experiment 4: stability and grey-zone rewrites (768 calls, 12.2 s, $0.055)
+
+Stability, 5 identical runs of the 13-question bank on 128 functions (1,664 answers each run):
+identical in all 5 runs 14%; median spread 0.01; 90% of answers within 0.05; 99% within 0.09; worst 0.16;
+mean standard deviation 0.008. Of 1,024 answers to the 8 kept questions, 17 (1.7%) crossed their cutoff in
+some runs and not others.
+
+Rewrites (scored against the experiment-3 key; avg Jev value on key-yes / key-no, share in 0.3–0.7):
+
+| Question | Avg yes | Avg no | Grey zone | Best cutoff | Precision | Recall | F1 |
+|---|---|---|---|---|---|---|---|
+| should_split (original) | 0.70 | 0.32 | 48% | 0.7 | 0.80 | 0.57 | 0.67 |
+| should_split_v2 (distinct nameable jobs, with exclusions) | 0.74 | 0.27 | 34% | 0.5 | 0.52 | 1.00 | 0.68 |
+| should_split_v3 (clean seams, ≥ several lines each) | 0.77 | 0.32 | 33% | 0.7 | 0.65 | 0.93 | 0.76 |
+| hardcoded_config (original) | 0.59 | 0.22 | 36% | 0.5 | 0.69 | 0.77 | 0.73 |
+| hardcoded_config_v2 (operator might change it) | 0.61 | 0.19 | 20% | 0.3 | 0.66 | 0.96 | 0.78 |
+| hardcoded_config_v3 (any literal URL/path/model/zone/port/limit) | 0.84 | 0.31 | 23% | 0.7 | 0.69 | 0.85 | 0.76 |
