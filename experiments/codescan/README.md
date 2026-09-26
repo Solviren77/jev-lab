@@ -73,3 +73,22 @@ Blind Claude key per file. Best yes-threshold per question by F1. "Yes" = key co
 
 Caveats: rare categories have 1–7 positives, so their scores are fragile; the key is one Claude reviewer
 per file (it disagreed with the experiment-1 key on some functions, e.g. operations_for).
+
+# Calibration: what Jev's numbers mean (no new calls)
+
+Experiment 3 answers (1,664 = 128 functions × 13 questions) grouped by Jev value, vs the blind key:
+
+| Jev value | Answers | Actually yes (all 13) | Actually yes (8 kept) |
+|---|---|---|---|
+| 0.0–0.3 | 1,166 | 0–3% | 0–3% |
+| 0.3–0.5 | 251 | 5–8% | 8–9% |
+| 0.5–0.6 | 68 | 25% | 29% |
+| 0.6–0.7 | 65 | 32% | 41% |
+| 0.7–0.8 | 37 | 62% | 78% |
+| 0.8–0.9 | 36 | 81% | 87% |
+| 0.9–1.0 | 41 | 90% | 90% |
+
+Dropped questions (misleading name, over-engineered, docstring mismatch): 0 true answers in any band.
+Docket-49 flags checked by Claude: 0.5–0.6 56%, 0.6–0.7 71%, 0.7–0.8 73%, 0.8–0.9 90%, 0.9–1.0 91% confirmed.
+Reading: below 0.5 is a reliable no; 0.5–0.7 overstates (a 0.6 is right about a third of the time on the
+strict key); 0.8+ is right about 9 times in 10.
