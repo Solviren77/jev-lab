@@ -51,6 +51,11 @@ button.x { border:0; background:none; color:var(--muted); font-size:18px; line-h
 .history div:hover { color:var(--accent); }
 details summary { cursor:pointer; color:var(--muted); font-size:13px; }
 pre { white-space:pre-wrap; font-size:12px; max-height:300px; overflow:auto; }
+.cmp th, .cmp td { font-size:13px; padding:5px 8px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+.cmp th { position:sticky; top:0; background:var(--panel); }
+.cmp td.y { color:var(--good); font-weight:600; }
+.cmp tr.diff td:first-child { border-left:3px solid var(--warn); }
+.check { display:flex; gap:8px; align-items:center; padding:3px 0; font-size:14px; }
 .actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
 </style>
 </head>
@@ -101,6 +106,13 @@ pre { white-space:pre-wrap; font-size:12px; max-height:300px; overflow:auto; }
         <span class="hint" style="margin:0">Each run is a paid call (usually under $0.001).</span>
       </div>
       <div id="result" style="margin-top:14px"></div>
+    </section>
+    <section>
+      <h2>Compare scenarios</h2>
+      <p class="hint">Tick 2 or more saved scenarios and run them together on the same documents. Uses the files in section 1 if you added any, otherwise each scenario's own documents.</p>
+      <div id="cmpList"></div>
+      <div class="actions" style="margin-top:8px"><button id="cmpRun">Run side by side</button><label class="hint" style="margin:0"><input type="checkbox" id="cmpDiff"> Only rows where they disagree</label></div>
+      <div id="cmpOut" style="margin-top:12px;overflow-x:auto"></div>
     </section>
     <section>
       <h2>History</h2>
@@ -221,7 +233,7 @@ function toScenario() {
   const questions = {}, used = new Set();
   qs.forEach((q, i) => {
     if (!q.text.trim()) throw new Error(`Question ${i + 1} is empty.`);
-    const out = {type: q.type, instructions: q.text.trim(), label: q.text.trim()};
+    const out = {type: q.type, instructions: q.text.trim(), label: (q.label || q.text).trim()};
     if (q.type === "noul") {
       if (q.yes.trim() || q.no.trim()) out.criteria = {true: q.yes.trim() || "Yes", false: q.no.trim() || "No"};
       out.threshold = (q.threshold || 50) / 100;
@@ -234,7 +246,7 @@ function toScenario() {
       if (lv.length < 2) throw new Error(`"${q.text}" needs at least two levels.`);
       out.criteria = lv;
     }
-    questions[slug(q.text, i, used)] = out;
+    questions[q.key && !used.has(q.key) ? (used.add(q.key), q.key) : slug(q.text, i, used)] = out;
   });
   if (!Object.keys(questions).length) throw new Error("Add at least one question.");
   const s = {name: $("name").value.trim() || "untitled", variables, documents: paths, questions, state: {}};
@@ -247,11 +259,12 @@ function fromScenario(s) {
   $("name").value = s.name || "";
   $("notes").value = (s.state && s.state.notes) || "";
   $("vars").innerHTML = ""; Object.entries(s.variables || {}).forEach(([k, v]) => addVar(k, v));
-  qs = Object.values(s.questions || {}).map(q => {
-    const f = newQ(q.type); f.text = q.label || q.instructions || "";
+  qs = Object.entries(s.questions || {}).map(([key, q]) => {
+    const f = newQ(q.type); f.text = q.instructions || ""; f.label = q.label || "";
     if (q.type === "noul") { f.yes = q.criteria?.true || ""; f.no = q.criteria?.false || ""; f.threshold = Math.round((q.threshold ?? .5) * 100); }
     if (q.type === "choice") f.options = Object.keys(q.criteria || {});
     if (q.type === "score") f.levels = [...(q.criteria || [])];
+    f.key = key;
     return f;
   });
   drawQs(); $("result").innerHTML = "";
@@ -311,8 +324,42 @@ $("save").onclick = async () => {
 $("new").onclick = reset;
 $("pick").onchange = async () => { if ($("pick").value) fromScenario(await api("/api/scenario/" + $("pick").value)); };
 $("kind").onchange = history;
+let lastCmp = null;
+function cell(q, a) {
+  if (!a) return `<td></td>`;
+  if (a.type === "noul") { const yes = a.value >= (q.threshold ?? .5); return `<td class="${yes ? "y" : ""}">${yes ? "Yes" : "No"} ${pct(a.value)}</td>`; }
+  if (a.type === "choice") return `<td class="y">${esc(a.choice)} <span class="hint">${pct(a.confidence)}</span></td>`;
+  return `<td class="y">${esc(a.level)} <span class="hint">${(+a.score).toFixed(2)}</span></td>`;
+}
+function verdict(q, a) { return !a ? "" : a.type === "noul" ? String(a.value >= (q.threshold ?? .5)) : a.type === "choice" ? a.choice : String(Math.round(a.score)); }
+function drawCmp() {
+  const recs = lastCmp; if (!recs) return;
+  const keys = [...new Set(recs.flatMap(r => Object.keys(r.questions || {})))];
+  const head = `<tr><th>Question</th>${recs.map(r => `<th>${esc(r.title || r.scenario)}${r.status === "error" ? ` <span class="err">${esc(r.error)}</span>` : ""}</th>`).join("")}</tr>`;
+  const rows = keys.map(k => {
+    const q0 = recs.find(r => r.questions?.[k]).questions[k];
+    const vs = recs.map(r => verdict(r.questions?.[k] || q0, r.answers?.[k]));
+    const diff = new Set(vs.filter(Boolean)).size > 1;
+    if ($("cmpDiff").checked && !diff) return "";
+    return `<tr class="${diff ? "diff" : ""}"><td>${esc(q0.label || q0.instructions)}</td>${recs.map(r => cell(r.questions?.[k] || q0, r.answers?.[k])).join("")}</tr>`;
+  }).join("");
+  const cost = recs.reduce((t, r) => t + (+(r.meta?.cost) || 0), 0);
+  $("cmpOut").innerHTML = `<p class="hint">Orange edge = scenarios disagree. Total cost $${cost.toFixed(5)}.</p><table class="cmp">${head}${rows}</table>`;
+}
+$("cmpDiff").onchange = drawCmp;
+$("cmpRun").onclick = async () => {
+  const names = [...$("cmpList").querySelectorAll("input:checked")].map(i => i.value);
+  $("cmpOut").innerHTML = `<p class="hint">Running ${names.length} scenarios at once…</p>`;
+  try {
+    const recs = await api("/api/compare", {names, uploads: files});
+    const titles = Object.fromEntries((await api("/api/scenarios")).map(s => [s.name, s.title]));
+    recs.forEach(r => r.title = titles[r.scenario] ? `${r.scenario.replace(/^code-\w+-/, "")}` : r.scenario);
+    lastCmp = recs; drawCmp(); history();
+  } catch (e) { $("cmpOut").innerHTML = `<p class="err">${esc(e.message)}</p>`; }
+};
 async function refresh() {
   const list = await api("/api/scenarios");
+  $("cmpList").innerHTML = list.map(s => `<label class="check"><input type="checkbox" value="${esc(s.name)}"> ${esc(s.name)}${s.title ? ` <span class="hint" style="margin:0">— ${esc(s.title)}</span>` : ""}</label>`).join("");
   $("pick").innerHTML = `<option value="">Open saved…</option>` + list.map(s => `<option>${esc(s.name)}</option>`).join("");
 }
 refresh(); history(); reset();

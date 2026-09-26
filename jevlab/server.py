@@ -3,6 +3,7 @@ import base64
 import json
 import re
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -25,7 +26,11 @@ def listing():
         for f in sorted(d.glob("*.json")):
             if f.stem not in seen:
                 seen.add(f.stem)
-                out.append({"name": f.stem, "path": str(f), "editable": d == dirs()[0]})
+                try:
+                    title = json.loads(f.read_text("utf8")).get("title", "")
+                except ValueError:
+                    title = ""
+                out.append({"name": f.stem, "path": str(f), "editable": d == dirs()[0], "title": title})
     return out
 
 
@@ -90,6 +95,18 @@ class Handler(BaseHTTPRequestHandler):
                     raise client.JevError("Name: letters, digits, dot, dash, underscore")
                 (dirs()[0] / (s["name"] + ".json")).write_text(json.dumps(s, indent=2) + "\n")
                 return self.send(200, {"saved": s["name"]})
+            if self.path == "/api/compare":
+                texts = dict(body.get("texts") or {}, **uploads(body.get("uploads")))
+                names = [n for n in body.get("names", []) if NAME.match(n)]
+                if not 2 <= len(names) <= 10:
+                    raise client.JevError("Pick 2 to 10 saved scenarios to compare")
+                def one(n):
+                    s = scenario.load(find(n))
+                    if texts:
+                        s["documents"] = []  # compare on the documents given here
+                    return scenario.run(s, texts=texts or None)
+                with ThreadPoolExecutor(len(names)) as pool:
+                    return self.send(200, list(pool.map(one, names)))
             if self.path in ("/api/run", "/api/preview"):
                 s = body["scenario"]
                 s.setdefault("name", "untitled")

@@ -8,7 +8,8 @@ import subprocess
 import zipfile
 from pathlib import Path
 
-SUPPORTED = {".txt", ".md", ".markdown", ".json", ".csv", ".pdf", ".docx", ".eml"}
+SUPPORTED = {".txt", ".md", ".markdown", ".json", ".csv", ".pdf", ".docx", ".eml",
+             ".py", ".js", ".ts", ".html", ".css", ".sh", ".sql", ".yaml", ".yml", ".toml"}
 
 
 def _strip_html(s):
