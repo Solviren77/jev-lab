@@ -152,3 +152,18 @@ Key: 3 independent Claude reviewers per function, majority vote (1.4M reviewer t
 
 The "yes = safe" questions default to yes when not applicable, so they can't be titrated this way; rephrase
 as "uses outside path WITHOUT a check" / "puts untrusted text into instructions".
+
+# Experiment 5b: real-world severity of the 3-reviewer findings
+
+6 Claude reviewers traced callers, routes and upstream protections for the 67 majority-confirmed findings
+(48 functions). Result: 28 real after whole-path review — 0 critical, 0 high, 2 medium, 23 low, 3 none.
+- Not real: all string-built SQL/shell/HTML findings (parameterized SQL, argv subprocess, hash-derived names),
+  all 4 "unguarded state change" handlers (protected by do_POST origin/host checks), path findings in do_GET/_file
+  (containment checked in the caller), most "AI failure unhandled" (caught by route handlers).
+- Real, medium: provider.codex / provider.run concatenate instructions and inbound email into one prompt in
+  Codex mode (prompt-injection exposure; the Claude path separates them). One root cause.
+- Real, low: no size cap on email/documents sent to models (draft_reply, email_issues, triage, mail_classify,
+  matter_write, matter_chat, guarded_generation), inline model in client_update, triage.main writing message
+  bodies under an unchecked path, allowlist hardening in _apply_register_change.
+Lesson: function-level "yes" is accurate about the function but most findings are neutralised by context the
+function can't show; path/taint context is the next lever.
