@@ -69,6 +69,25 @@ def sink_facts(fn_node, src):
     return sorted(set(facts))
 
 
+def own_protections(code):
+    """Protections a function applies itself, found by pattern; used downstream of its callers."""
+    p = []
+    if re.search(r"\bcheck\(|probabilities\(|jsonschema|validate\w*\(|isinstance\(.*(dict|list|str)", code) and \
+            re.search(r"raise\s+\w*(Error|Validation)", code):
+        p.append("validates data and raises on bad input/output")
+    if re.search(r"MAX_\w+|len\([^)]*\)\s*[<>]=?\s*\w+|\[:\s*\w+\]|truncat|max_chars", code):
+        p.append("caps or checks size")
+    if re.search(r"except\s*\(?[^:]*(ProviderError|Exception|Error)", code):
+        p.append("catches errors")
+    if re.search(r"_trusted_host|[Oo]rigin", code):
+        p.append("host/origin check")
+    if re.search(r"\.resolve\(\)", code) and re.search(r"parents|is_relative_to|relative_to", code):
+        p.append("path containment check")
+    if re.search(r"html\.escape|escape\(|quote\(", code):
+        p.append("escapes output")
+    return p
+
+
 def graph(out):
     classes = json.loads((HERE / "run-06/CLASSES.json").read_text())["functions"]
     app = {r["key"]: r for r in classes if "error" not in r and not S.TOOL.search(r["file"])}
@@ -90,7 +109,8 @@ def graph(out):
                               "containment_check": bool(re.search(r"\.resolve\(\)", code) and
                                                         re.search(r"parents|is_relative_to|relative_to", code)),
                               "catches": sorted(set(re.findall(r"except\s*\(?\s*([\w., ]+)", code))),
-                              "sinks": sink_facts(node, src)}
+                              "sinks": sink_facts(node, src),
+                              "own_protections": own_protections(code)}
                 by_name[node.name].append(key)
     callers = collections.defaultdict(set)
     for k, f in funcs.items():
@@ -139,6 +159,32 @@ def graph(out):
                                       if on and ck in funcs})
         f["callers"] = sorted(funcs[c]["name"] for c in callers[k])[:12]
         f["callers_catch"] = sorted({e for c in callers[k] for e in funcs[c]["catches"]})[:12]
+    # downstream: protections applied by functions this one calls (transitively, depth <= 4)
+    for k, f in funcs.items():
+        seen, frontier, found = {k}, [(k, 0)], {}
+        while frontier:
+            cur, d = frontier.pop(0)
+            if d >= 3:
+                continue
+            for raw in funcs[cur]["calls_raw"]:
+                base, _, c = raw.rpartition(".")
+                cands = by_name.get(c, [])
+                if base:
+                    mod = [t for t in cands if funcs[t]["module"] == base]
+                    cands = mod or ([] if base not in ("self", "cls") else
+                                    [t for t in cands if funcs[t]["file"] == funcs[cur]["file"]])
+                elif len(cands) > 1:
+                    cands = [t for t in cands if funcs[t]["file"] == funcs[cur]["file"]]
+                if len(cands) != 1:
+                    continue
+                for tgt in cands:
+                    if tgt in seen:
+                        continue
+                    seen.add(tgt)
+                    for prot in funcs[tgt]["own_protections"]:
+                        found.setdefault(prot, []).append(funcs[tgt]["name"])
+                    frontier.append((tgt, d + 1))
+        f["downstream_protections"] = {pr: sorted(set(n))[:6] for pr, n in found.items()}
     (out / "GRAPH.json").write_text(json.dumps({"sources": src, "functions": funcs}, indent=1))
     n = collections.Counter(kind for f in funcs.values() for kind in f["reached_from"])
     print("%d functions; sources: %s; reachable: %s; unreachable from any source: %d" % (
@@ -154,12 +200,15 @@ def facts_for(f):
         "callers": f["callers"] or ["no callers in application code"],
         "exceptions_caught_by_callers": f["callers_catch"] or ["none"],
         "sink_facts_in_this_function": f["sinks"] or ["none"],
+        "protections_in_this_function": f.get("own_protections") or ["none"],
+        "protections_in_functions_it_calls": {k: "in " + ", ".join(v) for k, v in
+                                              f.get("downstream_protections", {}).items()} or "none found",
         "note": "Facts come from static analysis of the whole codebase and may be incomplete.",
     }
 
 
 PREAMBLE = ("Use the path_facts: a problem only counts if outside input can actually reach it and no protection "
-            "on the path or in the callers already handles it. ")
+            "on the path, in the callers, or in the functions it calls already handles it. ")
 
 
 def run(out):

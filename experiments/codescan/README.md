@@ -186,3 +186,17 @@ validation, _calendar_mutation's origin check), which a caller-only graph can't 
 Caveat: the Sonnet input included the earlier Opus-path verdict ("prior_truth") for 47 flags, so those
 verdicts are not independent; Sonnet agreed on 40 and disagreed on 7 (mostly calling output "unvalidated"
 where Opus found provider.check validation).
+
+# Experiment 7: downstream protection facts (run-09)
+
+Added per-function protections (validation that raises, size caps, error catching, host/origin, path
+containment, escaping; pattern-matched) and the same protections found in functions each one calls
+(strictly resolved callees, depth 3). 390 calls, 6.0 s, $0.030.
+
+Flags at 0.5: 139 → 89 (57 dropped, 7 added; Sonnet judged all 7 added not real).
+Of the 31 Sonnet-real flags, 13 were kept and 18 dropped: 16 of the 19 real "no size limit" findings were
+suppressed because provider.claude/_post matched the size-cap pattern (length checks unrelated to the
+input sent), a false protection. Validation/error facts worked: output-unvalidated 35 → 28 (3/3 real kept),
+failure-unhandled 19 → 8 (3/4 kept), state change 4 → 0 (lost 1 low).
+Hybrid (downstream facts for all questions except size limit): ~113 flags with 29 of 31 real kept.
+Lesson: a wrong "protected" fact is worse than no fact — it hides real problems.
