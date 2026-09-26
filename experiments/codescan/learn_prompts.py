@@ -96,10 +96,31 @@ def combine(name, ans):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="heldout-higgins2")
+    ap.add_argument("--docket", action="store_true", help="use docket-49 (run-11 graph, run-07 routing, paid keys)")
     a = ap.parse_args()
     out = HERE / a.out
-    F = json.loads((out / "FUNCS.json").read_text())
-    routed = [f for f in F.values() if "role" in f and "security" in S.route(f)]
+    out.mkdir(exist_ok=True)
+    global REAL_SET
+    if a.docket:
+        G = json.loads((HERE / "run-11/GRAPH.json").read_text())["functions"]
+        routed, cache = [], {}
+        for r in json.loads((HERE / "run-07/RESULTS.json").read_text()):
+            if "security" not in r["sets"] or r["key"] not in G:
+                continue
+            if r["file"] not in cache:
+                cache[r["file"]] = {f["id"]: f for f in scan.functions(S.REPO / r["file"])}
+            fn = cache[r["file"]][r["fid"]]
+            routed.append(dict(G[r["key"]], fid=r["fid"], code=fn["code"]))
+        truth = {(k, q): v for k, q, v in json.loads((HERE / "run-11/TRUTH.json").read_text())}
+        for k, q, v in json.loads((HERE / "run-11/EXTRA_TRUTH.json").read_text()):
+            truth[(k, q)] = v
+        base = T.truth()
+        REAL_SET = {kq for kq in set(truth) | set(base) if kq[1] in QS and truth.get(kq, base.get(kq, False))}
+    else:
+        F = json.loads((out / "FUNCS.json").read_text())
+        routed = [f for f in F.values() if "role" in f and "security" in S.route(f)]
+        REAL_SET = {REAL}
+    print("real findings for these questions:", sorted(REAL_SET))
     jobs = []
     for name, make in VARIANTS.items():
         for f in routed:
@@ -126,22 +147,23 @@ def main():
             items = sorted(((v, k) for k, v in vals.items() if k[1] == q), reverse=True)
             row[q] = {"flags@0.5": sum(v >= .5 for v, _ in items), "flags@cutoff": sum(v >= cut[q] for v, _ in items),
                       "mean": round(sum(v for v, _ in items) / len(items), 3)}
-        rv = vals.get(REAL)
-        allv = sorted(vals.values(), reverse=True)
-        row["real_value"] = round(rv, 3) if rv is not None else None
-        row["real_rank_all"] = allv.index(rv) + 1 if rv is not None else None
-        sc = sorted((v for k, v in vals.items() if k[1] == REAL[1]), reverse=True)
-        row["real_rank_in_question"] = sc.index(rv) + 1 if rv is not None else None
+        ranks = []
+        for rk in sorted(REAL_SET):
+            rv = vals.get(rk)
+            sc = sorted((v for k, v in vals.items() if k[1] == rk[1]), reverse=True)
+            ranks.append("%s %s: %s #%s%s" % (rk[0].split("::")[1], rk[1][:5], round(rv, 2) if rv is not None else "-",
+                                               sc.index(rv) + 1 if rv is not None else "-",
+                                               " (flagged)" if rv is not None and rv >= cut[rk[1]] else " (missed)"))
+        row["real"] = ranks
         rows.append(row)
     (out / "LEARN.json").write_text(json.dumps(rows, indent=1))
     print("%-22s %-22s %-22s %-22s %s" % ("variant", "string-built @.5/@cut", "path @.5/@cut", "state @.5/@cut",
-                                          "real item: value, rank in its question / overall"))
+                                          "real items: value, rank in question"))
     for r in rows:
-        print("%-22s %-22s %-22s %-22s %s, %s/%s" % (r["variant"],
+        print("%-22s %-22s %-22s %-22s %s" % (r["variant"],
               "%d / %d" % (r[QS[0]]["flags@0.5"], r[QS[0]]["flags@cutoff"]),
               "%d / %d" % (r[QS[1]]["flags@0.5"], r[QS[1]]["flags@cutoff"]),
-              "%d / %d" % (r[QS[2]]["flags@0.5"], r[QS[2]]["flags@cutoff"]),
-              r["real_value"], r["real_rank_in_question"], r["real_rank_all"]))
+              "%d / %d" % (r[QS[2]]["flags@0.5"], r[QS[2]]["flags@cutoff"]), "; ".join(r["real"])))
 
 
 if __name__ == "__main__":

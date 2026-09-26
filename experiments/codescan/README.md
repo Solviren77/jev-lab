@@ -287,3 +287,22 @@ fixes injection/path but buries the real state-change finding: do_POST HAS an or
 Jev answers literally, and the real issue (two routes use a weaker check) is a partial-coverage judgment.
 Best per-question mix from this run: attacker framing for string-built and path, criteria variant 2 for
 state change → 9 flags at cutoff (was 22), real finding still 2nd in its question.
+
+# Experiment 13: the same six prompt variants on docket-49 (paid keys reused)
+
+373 routed functions × 6 variants, 2,238 calls, 42.9 s, $0.125 (1 transport error). Known real findings for
+these questions: practice_context (string-built, medium) and update_conversation (state change, low).
+
+| Variant | String-built @0.5 / @cutoff | Path | State change | practice_context | update_conversation |
+|---|---|---|---|---|---|
+| 0 baseline | 15 / 4 | 31 / 15 | 7 / 7 | 0.93, #1, flagged | 0.53, #3, flagged |
+| 1 no preamble | 27 / 9 | 47 / 20 | 40 / 40 | 0.95, #1, flagged | 0.67, #2, flagged |
+| 2 validated = no | 16 / 4 | 26 / 11 | 7 / 7 | 0.92, #1, flagged | 0.50, #4, flagged |
+| 3 attacker | 15 / 0 | 5 / 0 | 0 / 0 | 0.54, #7, missed | 0.27, #48, missed |
+| 4 presence split | 7 / 0 | 7 / 0 | 11 / 11 | 0.58, #5, missed | 0.15, #75, missed |
+| 5 statements | 3 / 1 | 24 / 12 | 1 / 1 | 0.78, #1, flagged | 0.35, #11, missed |
+
+The higgins "best mix" (attacker framing for string-built/path) does not transfer: it misses docket-49's
+real prompt-building finding and the state-change finding. Only baseline and variant 2 keep every real
+finding on both repositories; variant 2 is slightly quieter (path 15 → 11 here, 12 → 7 on higgins).
+Adopt variant 2. Wording that looks best on one codebase can be fitted to that codebase's kind of code.
