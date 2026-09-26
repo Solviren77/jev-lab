@@ -217,3 +217,17 @@ Size-limit: 10 of 19 real kept (was 3). Of the 9 still dropped: 4 sit behind jev
 (jev_templates, jev_topic_review, guarded_write) — arguably Sonnet's "real" was too strict; 2 sit behind
 assistant.turn/provider.agent caps; mail_classify.propose was dropped because only its Jev branch is capped
 (the graph is branch-blind); write_row, provider.run and guarded_generation fell to 0.36–0.48, just under 0.5.
+
+# Experiment 9: branch-aware facts, corrected key, per-question cutoffs (run-11)
+
+Facts now list model calls per direct callee with that path's protections (e.g. mail_classify.propose:
+via propose → capped; via run → no cap). Key corrected: 4 size findings behind jev.ask's 100 KB cap are
+not real. 390 calls, 6.1 s, $0.031.
+
+At a flat 0.5: 104 flags, 20/27 real. Per-question cutoffs (chosen on this same data — needs a held-out
+check): string-built 0.7, path 0.7, state change 0.5, output unvalidated 0.6, model inline 0.7, failure
+unhandled 0.4, size limit 0.45 → 76 flags, 25/27 real. Sonnet reviewed the 7 unreviewed flags: 2 new real —
+provider.agent sends the whole matter corpus plus accepted documents as context with no cap (medium; the
+size detector credited agent for capping other content), fixed_tokens failure uncaught in the triage CLI
+(low). Updated: 27 of 29 real in 76 flags, vs 139 flags in run-08.
+"Path from outside input" has 0 real findings in docket-49 at any cutoff: keep only as an inventory.

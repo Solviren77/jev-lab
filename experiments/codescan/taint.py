@@ -233,6 +233,48 @@ def graph(out):
                         found.setdefault(prot, []).append(funcs[tgt]["name"])
                     frontier.append((tgt, d + 1))
         f["downstream_protections"] = {pr: sorted(set(n))[:6] for pr, n in found.items()}
+    # branch-aware: protections per DIRECT callee subtree, so partial coverage is visible
+    def subtree(start):
+        seen, frontier, prot = {start}, [(start, 0)], set(funcs[start]["own_protections"])
+        while frontier:
+            cur, d = frontier.pop(0)
+            if d >= 3:
+                continue
+            for t in resolve(cur):
+                if t not in seen:
+                    seen.add(t); prot |= set(funcs[t]["own_protections"]); frontier.append((t, d + 1))
+        return sorted(prot)
+    def resolve(cur):
+        out = []
+        for raw in funcs[cur]["calls_raw"]:
+            base, _, c = raw.rpartition(".")
+            cands = by_name.get(c, [])
+            if base:
+                mod = [t for t in cands if funcs[t]["module"] == base]
+                cands = mod or ([] if base not in ("self", "cls") else
+                                [t for t in cands if funcs[t]["file"] == funcs[cur]["file"]])
+            elif len(cands) > 1:
+                cands = [t for t in cands if funcs[t]["file"] == funcs[cur]["file"]]
+            if len(cands) == 1:
+                out.append(cands[0])
+        return out
+    model_fns = set()
+    for k, f in funcs.items():
+        if any(c in SENDS for c in f["callees"]) and f["module"] in MODEL_MODULES:
+            model_fns.add(k)
+    reaches_model = {}
+    def rm(k, depth=0, stack=()):
+        if k in reaches_model:
+            return reaches_model[k]
+        if k in model_fns:
+            reaches_model[k] = True; return True
+        if depth > 4 or k in stack:
+            return False
+        r = any(rm(t, depth + 1, stack + (k,)) for t in resolve(k))
+        reaches_model[k] = r
+        return r
+    for k, f in funcs.items():
+        f["model_calls_via"] = {funcs[t]["name"]: subtree(t) or ["none"] for t in resolve(k) if rm(t)}
     (out / "GRAPH.json").write_text(json.dumps({"sources": src, "functions": funcs}, indent=1))
     n = collections.Counter(kind for f in funcs.values() for kind in f["reached_from"])
     print("%d functions; sources: %s; reachable: %s; unreachable from any source: %d" % (
@@ -251,6 +293,9 @@ def facts_for(f):
         "protections_in_this_function": f.get("own_protections") or ["none"],
         "protections_in_functions_it_calls": {k: "in " + ", ".join(v) for k, v in
                                               f.get("downstream_protections", {}).items()} or "none found",
+        "model_calls_and_their_protections": f.get("model_calls_via") or "makes no model calls through other functions",
+        "note_on_branches": "A protection only covers the calls listed under it; if one model call path has no "
+                            "size cap or error handling, the problem still exists on that path.",
         "note": "Facts come from static analysis of the whole codebase and may be incomplete.",
     }
 
