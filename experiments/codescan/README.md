@@ -167,3 +167,22 @@ as "uses outside path WITHOUT a check" / "puts untrusted text into instructions"
   bodies under an unchecked path, allowlist hardening in _apply_register_change.
 Lesson: function-level "yes" is accurate about the function but most findings are neutralised by context the
 function can't show; path/taint context is the next lever.
+
+# Experiment 6: taint pass + Sonnet review (docket-49 8f9a15e1)
+
+Code-built call graph (name-matched), sources (5 HTTP entry points, 8 mail reads, 9 model-call functions),
+reach chains, guards on the chain, callers' caught exceptions and sink facts, added to Jev's state with an
+instruction to count a problem only if outside input reaches it unprotected. 390 calls, 5.2 s, $0.028.
+
+Flags at 0.5, before → after: unguarded state change 67 → 4; path from input 65 → 24; string-built
+SQL/shell/HTML 30 → 22; model failure unhandled 27 → 19; no size limit 28 → 30; output unvalidated 35 → 35;
+model inline 5 → 5.
+
+Sonnet (5 reviewers, read-only) on all 139 remaining flags: 31 real (18 medium, 12 low, 1 none).
+Real by question: size limit 19/30, failure unhandled 4/19, model inline 3/5, output unvalidated 3/35,
+state change 1/4, string-built 1/22, path 0/24. Graph facts judged correct in 95/139; wrong mostly where the
+protection lives in a CALLEE (jev.ask's MAX_BYTES cap and probabilities() validation, provider.check schema
+validation, _calendar_mutation's origin check), which a caller-only graph can't see.
+Caveat: the Sonnet input included the earlier Opus-path verdict ("prior_truth") for 47 flags, so those
+verdicts are not independent; Sonnet agreed on 40 and disagreed on 7 (mostly calling output "unvalidated"
+where Opus found provider.check validation).
