@@ -129,3 +129,26 @@ Spot checks: the 30 "credentials" functions are the Google OAuth, Keychain/API-k
 expected. "Writes external" also counts sending content to AI providers, so it doubles as a data-leaves-the-
 machine inventory; answers under ~0.5 confidence there are doubtful. 127 of 1,293 tooling-path functions were
 not labelled tooling (mostly helpers inside scripts labelled by what they do).
+
+# Experiment 5: security and AI question sets, routed (docket-49 8f9a15e1)
+
+Routed by section-1 classes: 390 of 490 application functions (security 373, AI 71); 4.8 s, $0.022.
+Key: 3 independent Claude reviewers per function, majority vote (1.4M reviewer tokens).
+
+| Set | Question | Key yes | Reviewers unanimous | Jev avg yes/no | Cutoff | Precision | Recall | Verdict |
+|---|---|---|---|---|---|---|---|---|
+| AI | prompt includes untrusted text | 35 | 94% | 0.87/0.25 | 0.6 | 0.94 | 0.97 | Trust |
+| AI | model settings inline | 3 | 100% | 0.85/0.13 | 0.7 | 1.00 | 1.00 | Trust (small n) |
+| Security | sends data out | 56 | 98% | 0.74/0.11 | 0.4 | 0.77 | 0.89 | Trust as inventory |
+| AI | no size limit | 26 | 93% | 0.66/0.22 | 0.3 | 0.69 | 0.96 | Filter |
+| Security | path from outside input | 10 | 99% | 0.72/0.19 | 0.7 | 0.58 | 0.70 | Filter |
+| Security | string-built SQL/shell/HTML | 11 | 99% | 0.66/0.16 | 0.8 | 0.67 | 0.36 | Weak |
+| AI | failure unhandled | 6 | 93% | 0.83/0.36 | 0.5 | 0.22 | 1.00 | Filter only (over-flags) |
+| Security | data-changing request unguarded | 4 | 100% | 0.84/0.23 | 0.8 | 0.10 | 0.75 | Over-flags |
+| AI | output unvalidated | 3 | 94% | 0.56/0.44 | – | 0.07 | 1.00 | Drop |
+| Security | secret inline | 0 | 100% | –/0.05 | – | – | – | No cases (good) |
+| Security | path checked (problem = No) | 2 no | 100% | – | – | – | – | Rephrase as problem |
+| AI | untrusted separated (problem = No) | 2 no | 100% | – | – | – | – | Rephrase as problem |
+
+The "yes = safe" questions default to yes when not applicable, so they can't be titrated this way; rephrase
+as "uses outside path WITHOUT a check" / "puts untrusted text into instructions".
